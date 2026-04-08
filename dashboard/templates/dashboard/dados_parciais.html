@@ -1,0 +1,31 @@
+<table id="tabela-dados" class="w-full text-left border-collapse">
+    <thead class="bg-blue-600 text-white">
+        <tr>
+            <th class="p-4">Data/Hora</th>
+            <th class="p-4">Temperatura</th>
+            <th class="p-4">Umidade</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for leitura in leituras %}
+        <tr class="border-b hover:bg-gray-50">
+            <td class="p-4">{{ leitura.timestamp|date:"d/m/Y H:i:s" }}</td>
+            <td class="p-4 text-orange-600 font-bold">{{ leitura.temperatura }}°C</td>
+            <td class="p-4 text-blue-600 font-bold">{{ leitura.umidade }}%</td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="3" class="p-4 text-center">Nenhuma leitura encontrada.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<script>
+    if (typeof meuGrafico !== 'undefined') {
+        meuGrafico.data.labels = [{% for l in grafico %}"{{ l.timestamp|date:'H:i' }}",{% endfor %}];
+        meuGrafico.data.datasets[0].data = [{% for l in grafico %}{{ l.temperatura }},{% endfor %}];
+        meuGrafico.data.datasets[1].data = [{% for l in grafico %}{{ l.umidade }},{% endfor %}];
+        meuGrafico.update('none');
+    }
+</script>

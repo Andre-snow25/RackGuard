@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard SHT20</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+</head>
+<body class="bg-gray-100 p-8">
+    <div class="max-w-4xl mx-auto">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-3xl font-bold">Monitoramento SHT20</h1>
+            <a href="{% url 'exportar_csv' %}" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition">
+                Exportar CSV
+            </a>
+        </div>
+
+        <div class="bg-white shadow-md rounded-lg p-4 mb-6">
+            <canvas id="meuGrafico" width="400" height="150"></canvas>
+        </div>
+
+        <div class="bg-white shadow-md rounded-lg overflow-hidden"
+             hx-get="{% url 'index' %}"
+             hx-trigger="every 5s"
+             hx-target="#tabela-dados"
+             hx-swap="outerHTML">
+
+            <table id="tabela-dados" class="w-full text-left border-collapse">
+                <thead class="bg-blue-600 text-white">
+                    <tr>
+                        <th class="p-4">Data/Hora</th>
+                        <th class="p-4">Temperatura</th>
+                        <th class="p-4">Umidade</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for leitura in leituras %}
+                    <tr class="border-b hover:bg-gray-50">
+                        <td class="p-4">{{ leitura.timestamp|date:"d/m/Y H:i:s" }}</td>
+                        <td class="p-4 text-orange-600 font-bold">{{ leitura.temperatura }}°C</td>
+                        <td class="p-4 text-blue-600 font-bold">{{ leitura.umidade }}%</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="3" class="p-4 text-center">Nenhuma leitura encontrada.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const ctx = document.getElementById('meuGrafico').getContext('2d');
+        const meuGrafico = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [{% for l in grafico %}"{{ l.timestamp|date:'H:i' }}",{% endfor %}],
+                datasets: [{
+                    label: 'Temperatura (°C)',
+                    data: [{% for l in grafico %}{{ l.temperatura }},{% endfor %}],
+                    borderColor: 'rgb(249, 115, 22)',
+                    backgroundColor: 'rgba(249, 115, 22, 0.1)',
+                    fill: true,
+                    tension: 0.3
+                }, {
+                    label: 'Umidade (%)',
+                    data: [{% for l in grafico %}{{ l.umidade }},{% endfor %}],
+                    borderColor: 'rgb(37, 99, 235)',
+                    backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                    fill: true,
+                    tension: 0.3
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: { beginAtZero: false }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
