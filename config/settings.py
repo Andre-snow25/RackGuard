@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-$=0*q-54_thdmv))9o&viqa^t1^f@8fy%8t6^bk51z2^e5zens
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['univespi5.guisbeghen.com.br', '.guisbeghen.com.br', '127.0.0.1', 'localhost']
+ALLOWED_HOSTS = ['codfree.site', 'www.codfree.site', '127.0.0.1', 'localhost']
 
 
 # Application definition
