@@ -1,9 +1,12 @@
 import csv
+import json
 from django.shortcuts import render
 from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
+from django.utils import timezone
+from datetime import timedelta, datetime
 from .models import SensorData
-import json
+
 
 @csrf_exempt
 def receber_dados_sensor(request):
@@ -19,19 +22,49 @@ def receber_dados_sensor(request):
             return JsonResponse({'status': 'erro', 'mensagem': 'Dados invalidos'}, status=400)
     return JsonResponse({'status': 'erro', 'mensagem': 'Metodo nao permitido'}, status=405)
 
+
 def dashboard_view(request):
-    leituras_tabela = SensorData.objects.all().order_by('-timestamp')[:20]
-    leituras_grafico = list(reversed(leituras_tabela))
-    context = {'leituras': leituras_tabela, 'grafico': leituras_grafico}
-    if request.headers.get('HX-Request'):
+    agora = timezone.now()
+
+    # LISTA 1: ÚLTIMA HORA (AO VIVO)
+    uma_hora_atras = agora - timedelta(hours=1)
+    leituras_agora = SensorData.objects.filter(timestamp__gte=uma_hora_atras).order_by('-timestamp')
+
+    # LISTA 2: HISTÓRICO COM FILTROS
+    data_inicio = request.GET.get('data_inicio')
+    data_fim = request.GET.get('data_fim')
+    leituras_historico = None
+
+    if data_inicio and data_fim:
+        try:
+            start = datetime.strptime(data_inicio, '%Y-%m-%dT%H:%M')
+            end = datetime.strptime(data_fim, '%Y-%m-%dT%H:%M')
+            leituras_historico = SensorData.objects.filter(timestamp__range=(start, end)).order_by('-timestamp')
+        except ValueError:
+            pass
+
+    # GRÁFICO (Últimas 20 leituras da última hora)
+    leituras_grafico = list(reversed(leituras_agora[:20]))
+
+    context = {
+        'leituras': leituras_agora,
+        'leituras_historico': leituras_historico,
+        'grafico': leituras_grafico,
+        'filtros': {'inicio': data_inicio, 'fim': data_fim}
+    }
+
+    if request.headers.get('HX-Request') and not data_inicio:
         return render(request, 'dashboard/dados_parciais.html', context)
+
     return render(request, 'dashboard/index.html', context)
+
 
 def exportar_csv(request):
     response = HttpResponse(content_type='text/csv')
     response['Content-Disposition'] = 'attachment; filename="leituras_sensor.csv"'
     writer = csv.writer(response)
     writer.writerow(['Data/Hora', 'Temperatura', 'Umidade'])
+
     leituras = SensorData.objects.all().order_by('-timestamp')
     for leitura in leituras:
         writer.writerow([
