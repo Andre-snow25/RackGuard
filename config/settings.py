@@ -13,20 +13,28 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 import os
 from pathlib import Path
 
+import dj_database_url
+from dotenv import load_dotenv
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Carrega variáveis do arquivo .env (apenas no ambiente local; não vai para o Git)
+load_dotenv(BASE_DIR / '.env')
 
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-$=0*q-54_thdmv))9o&viqa^t1^f@8fy%8t6^bk51z2^e5zens'
+SECRET_KEY = os.environ['DJANGO_SECRET_KEY']
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG =False
+DEBUG = os.environ.get('DJANGO_DEBUG', 'False').lower() == 'true'
 
-ALLOWED_HOSTS = ['codfree.site', 'www.codfree.site', '127.0.0.1', 'localhost']
+ALLOWED_HOSTS = ['codfree.site', 'www.codfree.site', '.vercel.app', '127.0.0.1', 'localhost']
+
+CSRF_TRUSTED_ORIGINS = ['https://codfree.site', 'https://www.codfree.site', 'https://*.vercel.app']
 
 
 # Application definition
@@ -43,6 +51,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -74,16 +83,17 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
+# A conexão vem da variável DATABASE_URL (Supabase em produção, .env no ambiente local)
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'pi5desenv_db',
-        'USER': 'postgres',
-        'PASSWORD': 'Gsp@root2026',
-        'HOST': '127.0.0.1',
-        'PORT': '5432',
-    }
+    'default': dj_database_url.config(
+        env='DATABASE_URL',
+        conn_max_age=0,
+        ssl_require=os.environ.get('DATABASE_SSL', 'True').lower() == 'true',
+    )
 }
+
+# O pooler do Supabase (modo transaction, porta 6543) não suporta server-side cursors
+DATABASES['default']['DISABLE_SERVER_SIDE_CURSORS'] = True
 
 
 # Password validation
@@ -123,3 +133,6 @@ USE_TZ = True
 STATIC_URL = 'static/'
 
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
+# WhiteNoise serve os arquivos estáticos (ex.: CSS do admin) direto dos apps, sem collectstatic
+WHITENOISE_USE_FINDERS = True
