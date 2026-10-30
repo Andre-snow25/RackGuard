@@ -36,6 +36,22 @@ ALLOWED_HOSTS = ['codfree.site', 'www.codfree.site', '.vercel.app', '127.0.0.1',
 
 CSRF_TRUSTED_ORIGINS = ['https://codfree.site', 'https://www.codfree.site', 'https://*.vercel.app']
 
+# A Vercel recebe em HTTPS e repassa ao Django por HTTP; este cabeçalho indica a conexão original
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+# Mostra o motivo quando a verificação CSRF falha (e registra nos logs da Vercel)
+CSRF_FAILURE_VIEW = 'dashboard.views.csrf_falhou'
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {'console': {'class': 'logging.StreamHandler'}},
+    'loggers': {
+        'django.security': {'handlers': ['console'], 'level': 'WARNING'},
+        'django.request': {'handlers': ['console'], 'level': 'ERROR'},
+    },
+}
+
 
 # Application definition
 

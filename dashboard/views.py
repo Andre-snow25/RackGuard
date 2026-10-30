@@ -1,4 +1,5 @@
 import csv
+import logging
 from datetime import datetime, timedelta
 
 from django import forms
@@ -12,6 +13,8 @@ from django.views.decorators.http import require_POST
 
 from .models import Alarme, Leitura, Local, Rack
 from .simulador import simular_ate_agora
+
+logger = logging.getLogger(__name__)
 
 PERIODOS = {'6h': timedelta(hours=6), '24h': timedelta(hours=24), '7d': timedelta(days=7)}
 
@@ -27,6 +30,13 @@ class LimitesForm(forms.ModelForm):
             if dados.get(minimo) is not None and dados.get(maximo) is not None and dados[minimo] >= dados[maximo]:
                 self.add_error(maximo, 'O máximo precisa ser maior que o mínimo.')
         return dados
+
+
+def csrf_falhou(request, reason=''):
+    logger.warning('CSRF falhou em %s (host=%s, origin=%s, referer=%s, cookie=%s): %s',
+                   request.path, request.get_host(), request.META.get('HTTP_ORIGIN'),
+                   request.META.get('HTTP_REFERER'), 'csrftoken' in request.COOKIES, reason)
+    return render(request, 'dashboard/csrf_falhou.html', {'motivo': reason}, status=403)
 
 
 def _data(valor, formato='%Y-%m-%dT%H:%M'):

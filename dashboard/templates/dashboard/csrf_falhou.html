@@ -1,0 +1,16 @@
+{% extends 'dashboard/base.html' %}
+
+{% block titulo %}Sessão expirada · RackGuard{% endblock %}
+
+{% block conteudo %}
+<div class="min-h-[60vh] flex items-center justify-center">
+    <div class="max-w-md bg-slate-900 border border-slate-800 rounded-xl p-6 text-center">
+        <h1 class="text-xl font-bold text-white mb-2">Não foi possível enviar o formulário</h1>
+        <p class="text-slate-400 text-sm mb-4">
+            A página estava desatualizada ou a sessão expirou. Recarregue e tente novamente.
+        </p>
+        <a href="{{ request.path }}" class="inline-block bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2 px-4 rounded">Tentar de novo</a>
+        <p class="text-xs text-slate-600 mt-4">Motivo técnico: {{ motivo }}</p>
+    </div>
+</div>
+{% endblock %}
