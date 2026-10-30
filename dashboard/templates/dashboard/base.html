@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block titulo %}RackGuard{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com/3.4.16"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    {% block head %}{% endblock %}
+    <style>
+        @keyframes piscar { 0%, 100% { opacity: 1 } 50% { opacity: .35 } }
+        .piscar { animation: piscar 1.2s ease-in-out infinite; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-200 min-h-screen">
+    {% if user.is_authenticated %}
+    <nav class="bg-slate-900 border-b border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 flex flex-wrap items-center gap-x-6 gap-y-2 py-3">
+            <a href="{% url 'index' %}" class="flex items-center gap-2 font-bold text-lg text-white">
+                <svg class="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8M8 11h8M8 15h3"/></svg>
+                RackGuard
+            </a>
+            {% with url=request.resolver_match.url_name %}
+            <div class="flex gap-1 text-sm">
+                <a href="{% url 'index' %}" class="px-3 py-1.5 rounded {% if url == 'index' or url == 'rack_detalhe' %}bg-slate-800 text-white{% else %}text-slate-400 hover:text-white{% endif %}">Painel</a>
+                <a href="{% url 'alarmes' %}" class="px-3 py-1.5 rounded flex items-center gap-2 {% if url == 'alarmes' %}bg-slate-800 text-white{% else %}text-slate-400 hover:text-white{% endif %}">
+                    Alarmes
+                    {% if menu_alarmes %}
+                    <span class="text-xs font-bold px-1.5 rounded-full {% if menu_criticos %}bg-red-600 text-white piscar{% else %}bg-amber-500 text-slate-900{% endif %}">{{ menu_alarmes }}</span>
+                    {% endif %}
+                </a>
+                <a href="{% url 'historico' %}" class="px-3 py-1.5 rounded {% if url == 'historico' %}bg-slate-800 text-white{% else %}text-slate-400 hover:text-white{% endif %}">Histórico</a>
+            </div>
+            {% endwith %}
+            <div class="ml-auto flex items-center gap-3 text-sm">
+                <span class="text-slate-400 hidden sm:inline">{{ user.email|default:user.username }}</span>
+                <form method="post" action="{% url 'logout' %}">
+                    {% csrf_token %}
+                    <button class="text-slate-400 hover:text-white">Sair</button>
+                </form>
+            </div>
+        </div>
+    </nav>
+    {% endif %}
+
+    <main class="max-w-7xl mx-auto px-4 py-6">
+        {% block conteudo %}{% endblock %}
+    </main>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>

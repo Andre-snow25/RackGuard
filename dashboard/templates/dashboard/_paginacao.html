@@ -1,0 +1,11 @@
+{% if pagina.paginator.num_pages > 1 %}
+<div class="flex items-center justify-center gap-3 mt-4 text-sm">
+    {% if pagina.has_previous %}
+    <a href="?{{ querystring }}&page={{ pagina.previous_page_number }}" class="px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700">← Anterior</a>
+    {% endif %}
+    <span class="text-slate-400">Página {{ pagina.number }} de {{ pagina.paginator.num_pages }}</span>
+    {% if pagina.has_next %}
+    <a href="?{{ querystring }}&page={{ pagina.next_page_number }}" class="px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700">Próxima →</a>
+    {% endif %}
+</div>
+{% endif %}

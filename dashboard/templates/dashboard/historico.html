@@ -1,0 +1,58 @@
+{% extends 'dashboard/base.html' %}
+
+{% block titulo %}Histórico · RackGuard{% endblock %}
+
+{% block conteudo %}
+<div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+    <h1 class="text-2xl font-bold text-white">Histórico de leituras</h1>
+    <a href="{% url 'exportar_csv' %}?{{ querystring }}" class="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold py-2 px-4 rounded">Exportar CSV</a>
+</div>
+
+<form method="get" class="bg-slate-900 border border-slate-800 rounded-lg p-4 grid grid-cols-1 sm:grid-cols-4 gap-3 items-end mb-4 text-sm">
+    {% with cls="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1.5" %}
+    <label class="block"><span class="text-xs text-slate-400">Rack</span>
+        <select name="rack" class="{{ cls }}">
+            <option value="">Todos</option>
+            {% for r in racks %}<option value="{{ r.codigo }}" {% if filtros.rack == r.codigo %}selected{% endif %}>{{ r.codigo }}</option>{% endfor %}
+        </select>
+    </label>
+    <label class="block"><span class="text-xs text-slate-400">Início (padrão: últimas 24h)</span>
+        <input type="datetime-local" name="inicio" value="{{ filtros.inicio }}" class="{{ cls }}">
+    </label>
+    <label class="block"><span class="text-xs text-slate-400">Fim</span>
+        <input type="datetime-local" name="fim" value="{{ filtros.fim }}" class="{{ cls }}">
+    </label>
+    <div class="flex gap-2">
+        <button class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-1.5 rounded">Filtrar</button>
+        <a href="{% url 'historico' %}" class="px-3 py-1.5 rounded bg-slate-800 text-slate-300 hover:text-white">Limpar</a>
+    </div>
+    {% endwith %}
+</form>
+
+<p class="text-xs text-slate-400 mb-2">{{ pagina.paginator.count }} leitura{{ pagina.paginator.count|pluralize }}</p>
+
+<div class="bg-slate-900 border border-slate-800 rounded-lg overflow-x-auto">
+    <table class="w-full text-sm">
+        <thead class="text-left text-slate-400 border-b border-slate-800">
+            <tr><th class="p-3">Data/Hora</th><th class="p-3">Rack</th><th class="p-3">Temp</th><th class="p-3">Umid</th><th class="p-3">Energia</th><th class="p-3">Porta</th><th class="p-3">Fumaça</th></tr>
+        </thead>
+        <tbody class="divide-y divide-slate-800">
+            {% for l in pagina %}
+            <tr>
+                <td class="p-3 whitespace-nowrap">{{ l.timestamp|date:"d/m/Y H:i" }}</td>
+                <td class="p-3 whitespace-nowrap"><a href="{% url 'rack_detalhe' l.rack.codigo %}" class="text-white hover:underline">{{ l.rack.codigo }}</a></td>
+                <td class="p-3 {% if l.temperatura > l.rack.temp_max or l.temperatura < l.rack.temp_min %}text-red-400 font-semibold{% endif %}">{{ l.temperatura|floatformat:1 }} °C</td>
+                <td class="p-3 {% if l.umidade > l.rack.umid_max or l.umidade < l.rack.umid_min %}text-red-400 font-semibold{% endif %}">{{ l.umidade|floatformat:1 }} %</td>
+                <td class="p-3 {% if l.energia_kw > l.rack.energia_max %}text-red-400 font-semibold{% endif %}">{{ l.energia_kw|floatformat:2 }} kW</td>
+                <td class="p-3">{% if l.porta_aberta %}<span class="text-amber-400">Aberta</span>{% else %}Fechada{% endif %}</td>
+                <td class="p-3">{% if l.fumaca %}<span class="text-red-400 font-semibold">Sim</span>{% else %}Não{% endif %}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="7" class="p-4 text-slate-500">Nenhuma leitura no período.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% include 'dashboard/_paginacao.html' %}
+{% endblock %}

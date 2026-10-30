@@ -1,0 +1,96 @@
+{% extends 'dashboard/base.html' %}
+
+{% block titulo %}Alarmes · RackGuard{% endblock %}
+
+{% block conteudo %}
+<h1 class="text-2xl font-bold text-white mb-4">Histórico de alarmes</h1>
+
+<form method="get" class="bg-slate-900 border border-slate-800 rounded-lg p-4 grid grid-cols-2 md:grid-cols-7 gap-3 items-end mb-4 text-sm">
+    {% with cls="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1.5" %}
+    <label class="block"><span class="text-xs text-slate-400">Situação</span>
+        <select name="status" class="{{ cls }}">
+            <option value="">Todos</option>
+            <option value="ativos" {% if filtros.status == 'ativos' %}selected{% endif %}>Ativos</option>
+            <option value="encerrados" {% if filtros.status == 'encerrados' %}selected{% endif %}>Encerrados</option>
+        </select>
+    </label>
+    <label class="block"><span class="text-xs text-slate-400">Severidade</span>
+        <select name="severidade" class="{{ cls }}">
+            <option value="">Todas</option>
+            {% for valor, nome in severidades %}<option value="{{ valor }}" {% if filtros.severidade == valor %}selected{% endif %}>{{ nome }}</option>{% endfor %}
+        </select>
+    </label>
+    <label class="block"><span class="text-xs text-slate-400">Tipo</span>
+        <select name="tipo" class="{{ cls }}">
+            <option value="">Todos</option>
+            {% for valor, nome in tipos %}<option value="{{ valor }}" {% if filtros.tipo == valor %}selected{% endif %}>{{ nome }}</option>{% endfor %}
+        </select>
+    </label>
+    <label class="block"><span class="text-xs text-slate-400">Local</span>
+        <select name="local" class="{{ cls }}">
+            <option value="">Todos</option>
+            {% for local in locais %}<option value="{{ local.pk }}" {% if filtros.local == local.pk|stringformat:'s' %}selected{% endif %}>{{ local.nome }}</option>{% endfor %}
+        </select>
+    </label>
+    <label class="block"><span class="text-xs text-slate-400">De</span>
+        <input type="date" name="inicio" value="{{ filtros.inicio }}" class="{{ cls }}">
+    </label>
+    <label class="block"><span class="text-xs text-slate-400">Até</span>
+        <input type="date" name="fim" value="{{ filtros.fim }}" class="{{ cls }}">
+    </label>
+    <div class="flex gap-2">
+        <button class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-1.5 rounded">Filtrar</button>
+        <a href="{% url 'alarmes' %}" class="px-3 py-1.5 rounded bg-slate-800 text-slate-300 hover:text-white">Limpar</a>
+    </div>
+    {% endwith %}
+</form>
+
+<div class="flex flex-wrap gap-2 mb-4 text-xs">
+    <span class="px-2 py-1 rounded bg-slate-800 text-white font-semibold">{{ total }} alarme{{ total|pluralize }}</span>
+    {% for nome, qtd in por_tipo %}
+    <span class="px-2 py-1 rounded bg-slate-900 border border-slate-800 text-slate-300">{{ nome }}: {{ qtd }}</span>
+    {% endfor %}
+</div>
+
+<div class="bg-slate-900 border border-slate-800 rounded-lg overflow-x-auto">
+    <table class="w-full text-sm">
+        <thead class="text-left text-slate-400 border-b border-slate-800">
+            <tr>
+                <th class="p-3">Início</th><th class="p-3">Rack</th><th class="p-3">Tipo</th><th class="p-3">Severidade</th>
+                <th class="p-3">Pior valor</th><th class="p-3">Duração</th><th class="p-3">Situação</th><th class="p-3"></th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-800">
+            {% for a in pagina %}
+            <tr class="{% if a.ativo and a.severidade == 'critico' %}bg-red-950/40{% elif a.ativo %}bg-amber-950/20{% endif %}">
+                <td class="p-3 whitespace-nowrap">{{ a.inicio|date:"d/m/Y H:i" }}</td>
+                <td class="p-3 whitespace-nowrap"><a href="{% url 'rack_detalhe' a.rack.codigo %}" class="text-white hover:underline">{{ a.rack.codigo }}</a> <span class="text-slate-500">{{ a.rack.local.nome }}</span></td>
+                <td class="p-3">{{ a.get_tipo_display }}</td>
+                <td class="p-3">
+                    {% if a.severidade == 'critico' %}<span class="text-xs font-bold bg-red-600 text-white px-2 py-0.5 rounded {% if a.ativo %}piscar{% endif %}">CRÍTICO</span>
+                    {% else %}<span class="text-xs font-bold bg-amber-500 text-slate-900 px-2 py-0.5 rounded">AVISO</span>{% endif %}
+                </td>
+                <td class="p-3">{{ a.valor|floatformat:1|default:"—" }}</td>
+                <td class="p-3 whitespace-nowrap">{% if a.fim %}{{ a.inicio|timesince:a.fim }}{% else %}{{ a.inicio|timesince }}{% endif %}</td>
+                <td class="p-3 whitespace-nowrap">{% if a.ativo %}<span class="text-red-400 font-semibold">Ativo</span>{% else %}<span class="text-slate-500">Encerrado {{ a.fim|date:"H:i" }}</span>{% endif %}</td>
+                <td class="p-3 text-right">
+                    {% if a.reconhecido %}
+                    <span class="text-xs text-emerald-400">✓ Reconhecido</span>
+                    {% else %}
+                    <form method="post" action="{% url 'reconhecer_alarme' a.pk %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                        <button class="text-xs px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200">Reconhecer</button>
+                    </form>
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="8" class="p-4 text-slate-500">Nenhum alarme encontrado com esses filtros.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% include 'dashboard/_paginacao.html' %}
+{% endblock %}
