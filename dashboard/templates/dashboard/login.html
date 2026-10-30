@@ -1,13 +1,13 @@
 {% extends 'dashboard/base.html' %}
+{% load static %}
 
 {% block titulo %}Entrar · RackGuard{% endblock %}
 
 {% block conteudo %}
 <div class="min-h-[80vh] flex items-center justify-center">
-    <div class="w-full max-w-sm">
-        <div class="flex flex-col items-center mb-8">
-            <svg class="w-12 h-12 text-emerald-400 mb-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8M8 11h8M8 15h3"/></svg>
-            <h1 class="text-2xl font-bold text-white">RackGuard</h1>
+    <div class="w-full max-w-md">
+        <div class="flex flex-col items-center mb-6">
+            <img src="{% static 'dashboard/logo.jpg' %}" alt="RackGuard" class="w-full rounded-xl shadow-2xl shadow-black/50 mb-4">
             <p class="text-slate-400 text-sm">Monitoramento da infraestrutura das escolas</p>
         </div>
 

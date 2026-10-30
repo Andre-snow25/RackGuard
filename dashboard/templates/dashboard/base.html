@@ -1,9 +1,10 @@
-<!DOCTYPE html>
+{% load static %}<!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block titulo %}RackGuard{% endblock %}</title>
+    <link rel="icon" type="image/png" href="{% static 'dashboard/favicon.png' %}">
     <script src="https://cdn.tailwindcss.com/3.4.16"></script>
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
     {% block head %}{% endblock %}
@@ -17,7 +18,7 @@
     <nav class="bg-slate-900 border-b border-slate-800">
         <div class="max-w-7xl mx-auto px-4 flex flex-wrap items-center gap-x-6 gap-y-2 py-3">
             <a href="{% url 'index' %}" class="flex items-center gap-2 font-bold text-lg text-white">
-                <svg class="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8M8 11h8M8 15h3"/></svg>
+                <img src="{% static 'dashboard/escudo.png' %}" alt="" class="h-8 w-auto">
                 RackGuard
             </a>
             {% with url=request.resolver_match.url_name %}
