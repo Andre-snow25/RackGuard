@@ -21,8 +21,8 @@
 
     <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
         <div class="bg-slate-900 border border-slate-800 rounded-lg p-4">
-            <p class="text-xs uppercase text-slate-400">Racks</p>
-            <p class="text-2xl font-bold text-white">{{ resumo.racks }}</p>
+            <p class="text-xs uppercase text-slate-400">Escolas · Pontos</p>
+            <p class="text-2xl font-bold text-white">{{ resumo.escolas }}<span class="text-base text-slate-400"> · {{ resumo.racks }}</span></p>
         </div>
         <div class="bg-slate-900 border rounded-lg p-4 {% if resumo.criticos %}border-red-600{% else %}border-slate-800{% endif %}">
             <p class="text-xs uppercase text-slate-400">Críticos</p>
@@ -44,16 +44,32 @@
 
     <div class="grid lg:grid-cols-[1fr_340px] gap-6">
         <div class="space-y-6">
-            {% for local, racks in locais.items %}
-            <section>
-                <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-400 mb-2">{{ local.nome }} <span class="font-normal normal-case">· {{ local.cidade }}</span></h2>
+            {% for escola, setores in escolas.items %}
+            <div class="bg-slate-900/40 border border-slate-800 rounded-xl">
+                <div class="flex items-center gap-3 px-4 py-3">
+                    <h2 class="text-lg font-bold text-white">{{ escola.nome }}</h2>
+                    {% if escola.status == 'critico' %}
+                    <span class="text-xs font-bold bg-red-600 text-white px-2 py-0.5 rounded piscar">CRÍTICO</span>
+                    {% elif escola.status == 'aviso' %}
+                    <span class="text-xs font-bold bg-amber-500 text-slate-900 px-2 py-0.5 rounded">AVISO</span>
+                    {% else %}
+                    <span class="text-xs font-bold bg-emerald-600/20 text-emerald-400 px-2 py-0.5 rounded">NORMAL</span>
+                    {% endif %}
+                </div>
+                <div class="px-4 pb-4 space-y-4">
+                {% for setor, racks in setores.items %}
+                <section>
+                <h3 class="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-2">{{ setor }}</h3>
                 <div class="grid sm:grid-cols-2 xl:grid-cols-3 gap-3">
                     {% for rack in racks %}
                     <a href="{% url 'rack_detalhe' rack.codigo %}"
                        class="block rounded-lg border p-4 transition hover:brightness-125
                               {% if rack.status == 'critico' %}border-red-600 bg-red-950/50{% elif rack.status == 'aviso' %}border-amber-500 bg-amber-950/30{% else %}border-slate-800 bg-slate-900{% endif %}">
-                        <div class="flex items-center justify-between mb-3">
-                            <span class="font-bold text-white">{{ rack.codigo }}</span>
+                        <div class="flex items-center justify-between gap-2 mb-3">
+                            <div class="min-w-0">
+                                <p class="font-bold text-white truncate">{{ rack.descricao|default:rack.codigo }}</p>
+                                <p class="text-xs text-slate-500">{{ rack.codigo }}</p>
+                            </div>
                             {% if rack.status == 'critico' %}
                             <span class="text-xs font-bold bg-red-600 text-white px-2 py-0.5 rounded piscar">CRÍTICO</span>
                             {% elif rack.status == 'aviso' %}
@@ -89,9 +105,12 @@
                     </a>
                     {% endfor %}
                 </div>
-            </section>
+                </section>
+                {% endfor %}
+                </div>
+            </div>
             {% empty %}
-            <p class="text-slate-400">Nenhum rack cadastrado. Rode <code>python manage.py popular_demo</code> para criar os dados de demonstração.</p>
+            <p class="text-slate-400">Nenhuma escola cadastrada. Rode <code>python manage.py popular_demo</code> para criar os dados de demonstração.</p>
             {% endfor %}
         </div>
 
@@ -103,7 +122,8 @@
                     <span class="mt-1.5 w-2.5 h-2.5 shrink-0 rounded-full {% if a.severidade == 'critico' %}bg-red-500 piscar{% else %}bg-amber-400{% endif %}"></span>
                     <div class="text-sm min-w-0">
                         <p class="font-semibold text-white">{{ a.get_tipo_display }}{% if a.valor is not None %} · {{ a.valor|floatformat:1 }}{% endif %}</p>
-                        <p class="text-slate-400 truncate">{{ a.rack.codigo }} · {{ a.rack.local.nome }}</p>
+                        <p class="text-slate-400 truncate">{{ a.rack.local.nome }} · {{ a.rack.get_setor_display }}</p>
+                        <p class="text-slate-500 truncate">{{ a.rack.descricao }} ({{ a.rack.codigo }})</p>
                         <p class="text-xs text-slate-500">há {{ a.inicio|timesince }}{% if a.reconhecido %} · reconhecido{% endif %}</p>
                     </div>
                 </a>

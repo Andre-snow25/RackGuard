@@ -4,21 +4,30 @@ from django.utils import timezone
 
 
 class Local(models.Model):
-    """Site/datacenter onde os racks ficam instalados."""
+    """Escola onde ficam os pontos monitorados."""
     usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='locais')
     nome = models.CharField(max_length=100)
-    cidade = models.CharField(max_length=100)
 
     class Meta:
         ordering = ['nome']
-        verbose_name_plural = 'locais'
+        verbose_name = 'escola'
 
     def __str__(self):
-        return f"{self.nome} ({self.cidade})"
+        return self.nome
 
 
 class Rack(models.Model):
+    """Ponto monitorado (rack, servidor ou sala) dentro de um setor da escola."""
+
+    class Setor(models.TextChoices):
+        SERVIDOR = 'servidor', 'Servidor'
+        DATA_CENTER = 'data_center', 'Data Center'
+        RACKS = 'racks', 'Racks'
+        SALA_INFORMATICA = 'sala_informatica', 'Sala de Informática'
+        SALA_PROFESSORES = 'sala_professores', 'Sala dos Professores'
+
     local = models.ForeignKey(Local, on_delete=models.CASCADE, related_name='racks')
+    setor = models.CharField(max_length=20, choices=Setor.choices, default=Setor.RACKS)
     codigo = models.CharField(max_length=20, unique=True)
     descricao = models.CharField(max_length=100, blank=True)
 
@@ -30,7 +39,9 @@ class Rack(models.Model):
     energia_max = models.FloatField('consumo máximo (kW)', default=5)
 
     class Meta:
-        ordering = ['local__nome', 'codigo']
+        ordering = ['local__nome', 'pk']
+        verbose_name = 'ponto monitorado'
+        verbose_name_plural = 'pontos monitorados'
 
     def __str__(self):
         return self.codigo

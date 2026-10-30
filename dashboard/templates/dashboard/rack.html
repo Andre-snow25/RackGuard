@@ -1,6 +1,6 @@
 {% extends 'dashboard/base.html' %}
 
-{% block titulo %}{{ rack.codigo }} · RackGuard{% endblock %}
+{% block titulo %}{{ rack.descricao|default:rack.codigo }} · RackGuard{% endblock %}
 
 {% block head %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
@@ -10,7 +10,7 @@
 <a href="{% url 'index' %}" class="text-sm text-slate-400 hover:text-white">← Painel</a>
 
 <div class="flex flex-wrap items-center gap-3 mt-2 mb-5">
-    <h1 class="text-2xl font-bold text-white">{{ rack.codigo }}</h1>
+    <h1 class="text-2xl font-bold text-white">{{ rack.descricao|default:rack.codigo }}</h1>
     {% if status == 'critico' %}
     <span class="text-xs font-bold bg-red-600 text-white px-2 py-0.5 rounded piscar">CRÍTICO</span>
     {% elif status == 'aviso' %}
@@ -18,7 +18,7 @@
     {% else %}
     <span class="text-xs font-bold bg-emerald-600/20 text-emerald-400 px-2 py-0.5 rounded">NORMAL</span>
     {% endif %}
-    <span class="text-slate-400">{{ rack.local.nome }} · {{ rack.local.cidade }}</span>
+    <span class="text-slate-400">{{ rack.local.nome }} · {{ rack.get_setor_display }} · {{ rack.codigo }}</span>
     <div class="ml-auto flex gap-1 text-sm">
         {% for p in periodos %}
         <a href="?periodo={{ p }}" class="px-3 py-1 rounded {% if p == periodo %}bg-slate-700 text-white{% else %}bg-slate-900 text-slate-400 hover:text-white{% endif %}">{{ p }}</a>
@@ -84,7 +84,7 @@
                 </tbody>
             </table>
         </div>
-        <a href="{% url 'alarmes' %}?local={{ rack.local_id }}" class="block text-right text-sm text-slate-400 hover:text-white mt-2">Ver todos →</a>
+        <a href="{% url 'alarmes' %}?local={{ rack.local_id }}&setor={{ rack.setor }}" class="block text-right text-sm text-slate-400 hover:text-white mt-2">Ver todos →</a>
 
         <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-400 mb-2 mt-4">Últimas leituras</h2>
         <div class="bg-slate-900 border border-slate-800 rounded-lg overflow-x-auto">

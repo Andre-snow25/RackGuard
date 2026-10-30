@@ -9,17 +9,23 @@ from django.utils import timezone
 from dashboard.models import Local, Rack
 from dashboard.simulador import INTERVALO, alinhar, salvar, simular_rack
 
-# (nome, cidade, prefixo, quantidade de racks, limites diferentes do padrão)
-LOCAIS = [
-    ('Datacenter Central', 'São Paulo', 'SP', 4, {}),
-    ('Filial Campinas', 'Campinas', 'CPS', 3, {'temp_max': 26}),
-    ('Unidade Rio', 'Rio de Janeiro', 'RJ', 3, {'umid_max': 65}),
-    ('Escritório Curitiba', 'Curitiba', 'CWB', 2, {'temp_min': 17, 'energia_max': 4.5}),
-]
+ESCOLAS = ['Escola 1', 'Escola 2', 'Escola 3']
+
+S = Rack.Setor
+# setor: (sigla do código, pontos monitorados, limites diferentes do padrão)
+SETORES = {
+    S.SERVIDOR: ('SRV', ['Servidor de Arquivos', 'Servidor Acadêmico'], {}),
+    S.DATA_CENTER: ('DC', ['Rack Principal', 'Rack de Backup'], {'temp_max': 26, 'energia_max': 6}),
+    S.RACKS: ('RCK', ['Rack Bloco A', 'Rack Bloco B', 'Rack Biblioteca'], {'energia_max': 4}),
+    S.SALA_INFORMATICA: ('INF', ['Laboratório 1', 'Laboratório 2'],
+                         {'temp_max': 30, 'umid_min': 35, 'umid_max': 70, 'energia_max': 3.5}),
+    S.SALA_PROFESSORES: ('PROF', ['Sala dos Professores'],
+                         {'temp_max': 30, 'umid_min': 35, 'umid_max': 70, 'energia_max': 1.5}),
+}
 
 
 class Command(BaseCommand):
-    help = 'Cria o usuário de demonstração, locais, racks e um histórico fictício de leituras e alarmes.'
+    help = 'Cria o usuário de demonstração, as escolas, setores, pontos monitorados e um histórico fictício.'
 
     def add_arguments(self, parser):
         parser.add_argument('--email', default='rackguard@gmail.com')
@@ -37,12 +43,13 @@ class Command(BaseCommand):
             # Recria do zero os dados fictícios desse usuário
             usuario.locais.all().delete()
             racks = []
-            for nome, cidade, prefixo, quantidade, limites in LOCAIS:
-                local = Local.objects.create(usuario=usuario, nome=nome, cidade=cidade)
-                for i in range(1, quantidade + 1):
-                    racks.append(Rack.objects.create(
-                        local=local, codigo=f'{prefixo}-R{i:02d}', descricao=f'Rack {i} - {nome}', **limites,
-                    ))
+            for n, nome in enumerate(ESCOLAS, start=1):
+                escola = Local.objects.create(usuario=usuario, nome=nome)
+                for setor, (sigla, pontos, limites) in SETORES.items():
+                    for i, descricao in enumerate(pontos, start=1):
+                        racks.append(Rack.objects.create(
+                            local=escola, setor=setor, codigo=f'E{n}-{sigla}-{i:02d}', descricao=descricao, **limites,
+                        ))
 
             fim = alinhar(timezone.now())
             momentos = []
@@ -57,8 +64,9 @@ class Command(BaseCommand):
                 salvar(leituras, novos, [])
                 total_leituras += len(leituras)
                 total_alarmes += len(novos)
-                self.stdout.write(f'  {rack.codigo}: {len(leituras)} leituras, {len(novos)} alarmes')
+                self.stdout.write(f'  {rack.codigo} ({rack.descricao}): {len(leituras)} leituras, {len(novos)} alarmes')
 
         self.stdout.write(self.style.SUCCESS(
-            f'Pronto: {len(racks)} racks, {total_leituras} leituras e {total_alarmes} alarmes em {dias} dias.'
+            f'Pronto: {len(ESCOLAS)} escolas, {len(racks)} pontos, {total_leituras} leituras '
+            f'e {total_alarmes} alarmes em {dias} dias.'
         ))

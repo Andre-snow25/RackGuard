@@ -40,12 +40,23 @@ def alinhar(momento):
     return momento - timedelta(seconds=int(momento.timestamp()) % segundos, microseconds=momento.microsecond)
 
 
+# Valores típicos de cada setor: (temperatura °C, umidade %, energia kW)
+PERFIS = {
+    Rack.Setor.SERVIDOR: (22.5, 48, 3.0),
+    Rack.Setor.DATA_CENTER: (22.0, 47, 4.0),
+    Rack.Setor.RACKS: (23.0, 48, 2.5),
+    Rack.Setor.SALA_INFORMATICA: (24.5, 52, 2.0),
+    Rack.Setor.SALA_PROFESSORES: (24.0, 55, 0.8),
+}
+
+
 def _perfil(rack):
-    """Valores típicos de cada rack, variando um pouco entre eles."""
+    """Valores típicos do ponto, conforme o setor e variando um pouco entre pontos."""
+    temperatura, umidade, energia = PERFIS.get(rack.setor, PERFIS[Rack.Setor.RACKS])
     return _Estado(
-        temperatura=21.5 + (rack.pk % 5) * 0.6,
-        umidade=47 + (rack.pk % 3) * 2,
-        energia_kw=2.2 + (rack.pk % 4) * 0.5,
+        temperatura=temperatura - 0.5 + (rack.pk % 3) * 0.5,
+        umidade=umidade - 2 + (rack.pk % 3) * 2,
+        energia_kw=energia * (0.9 + (rack.pk % 3) * 0.1),
     )
 
 
@@ -70,7 +81,7 @@ def _proxima(rack, anterior, momento):
     energia = anterior.energia_kw + 0.3 * (base.energia_kw * (1 + 0.15 * ciclo) - anterior.energia_kw)
     energia += rng.gauss(0, 0.08)
     if rng.random() < 0.003:  # pico de processamento
-        energia += rng.uniform(2, 3.5)
+        energia += base.energia_kw * rng.uniform(0.7, 1.2)
 
     porta = rng.random() < (0.55 if anterior.porta_aberta else 0.006)
     fumaca = rng.random() < (0.3 if anterior.fumaca else 0.0005)
@@ -78,7 +89,7 @@ def _proxima(rack, anterior, momento):
     return _Estado(
         temperatura=round(temperatura, 1),
         umidade=round(min(max(umidade, 5), 95), 1),
-        energia_kw=round(max(energia, 0.3), 2),
+        energia_kw=round(max(energia, 0.1), 2),
         porta_aberta=porta,
         fumaca=fumaca,
     )
@@ -158,7 +169,7 @@ def salvar(leituras, novos, alterados):
 
 
 def simular_ate_agora(agora=None):
-    """Cria as leituras que faltam até agora para todos os racks. Retorna quantas criou."""
+    """Cria as leituras que faltam até agora para todos os pontos. Retorna quantas criou."""
     agora = agora or timezone.now()
     alvo = alinhar(agora)
     EstadoSimulacao.objects.get_or_create(pk=1)

@@ -63,18 +63,22 @@ def painel(request):
         .select_related('rack__local')
         .order_by('-severidade', '-inicio')  # 'critico' vem antes de 'aviso'
     )
-    locais = {}
+    # {escola: {setor: [pontos]}}
+    escolas = {}
     for rack in racks:
         rack.leitura = ultimas.get(rack.pk)
         rack.alarmes_ativos = [a for a in ativos if a.rack_id == rack.pk]
         rack.status = _status(rack.alarmes_ativos)
-        locais.setdefault(rack.local, []).append(rack)
+        escolas.setdefault(rack.local, {}).setdefault(rack.get_setor_display(), []).append(rack)
+    for escola, setores in escolas.items():
+        escola.status = _status([a for pontos in setores.values() for r in pontos for a in r.alarmes_ativos])
 
     leituras = [r.leitura for r in racks if r.leitura]
     context = {
-        'locais': locais,
+        'escolas': escolas,
         'ativos': ativos,
         'resumo': {
+            'escolas': len(escolas),
             'racks': len(racks),
             'criticos': sum(a.severidade == Alarme.Severidade.CRITICO for a in ativos),
             'avisos': sum(a.severidade == Alarme.Severidade.AVISO for a in ativos),
@@ -153,6 +157,8 @@ def alarmes(request):
         qs = qs.filter(tipo=f['tipo'])
     if f.get('local'):
         qs = qs.filter(rack__local_id=f['local'])
+    if f.get('setor'):
+        qs = qs.filter(rack__setor=f['setor'])
     if inicio := _data(f.get('inicio'), '%Y-%m-%d'):
         qs = qs.filter(inicio__gte=inicio)
     if fim := _data(f.get('fim'), '%Y-%m-%d'):
@@ -168,6 +174,7 @@ def alarmes(request):
         'tipos': Alarme.Tipo.choices,
         'severidades': Alarme.Severidade.choices,
         'locais': Local.objects.filter(usuario=request.user),
+        'setores': Rack.Setor.choices,
         'querystring': _sem_pagina(f),
     }
     return render(request, 'dashboard/alarmes.html', context)
@@ -191,6 +198,10 @@ def reconhecer_alarme(request, pk):
 def _leituras_filtradas(request):
     qs = Leitura.objects.filter(rack__local__usuario=request.user).select_related('rack__local')
     f = request.GET
+    if f.get('local'):
+        qs = qs.filter(rack__local_id=f['local'])
+    if f.get('setor'):
+        qs = qs.filter(rack__setor=f['setor'])
     if f.get('rack'):
         qs = qs.filter(rack__codigo=f['rack'])
     inicio = _data(f.get('inicio')) or timezone.now() - timedelta(hours=24)
@@ -207,7 +218,9 @@ def historico(request):
     context = {
         'pagina': Paginator(qs, 100).get_page(request.GET.get('page')),
         'filtros': request.GET,
-        'racks': Rack.objects.filter(local__usuario=request.user),
+        'racks': Rack.objects.filter(local__usuario=request.user).select_related('local'),
+        'locais': Local.objects.filter(usuario=request.user),
+        'setores': Rack.Setor.choices,
         'querystring': _sem_pagina(request.GET),
     }
     return render(request, 'dashboard/historico.html', context)
@@ -219,10 +232,12 @@ def exportar_csv(request):
     response['Content-Disposition'] = 'attachment; filename="leituras_rackguard.csv"'
     response.write('﻿')  # BOM para o Excel reconhecer os acentos
     writer = csv.writer(response, delimiter=';')
-    writer.writerow(['Data/Hora', 'Local', 'Rack', 'Temperatura (°C)', 'Umidade (%)', 'Energia (kW)', 'Porta', 'Fumaça'])
+    writer.writerow(['Data/Hora', 'Escola', 'Setor', 'Código', 'Ponto', 'Temperatura (°C)', 'Umidade (%)',
+                     'Energia (kW)', 'Porta', 'Fumaça'])
     for l in _leituras_filtradas(request).iterator():
         writer.writerow([
-            timezone.localtime(l.timestamp).strftime('%d/%m/%Y %H:%M'), l.rack.local.nome, l.rack.codigo,
+            timezone.localtime(l.timestamp).strftime('%d/%m/%Y %H:%M'), l.rack.local.nome,
+            l.rack.get_setor_display(), l.rack.codigo, l.rack.descricao,
             str(l.temperatura).replace('.', ','), str(l.umidade).replace('.', ','),
             str(l.energia_kw).replace('.', ','), 'Aberta' if l.porta_aberta else 'Fechada',
             'Sim' if l.fumaca else 'Não',

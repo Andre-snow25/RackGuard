@@ -8,12 +8,24 @@
     <a href="{% url 'exportar_csv' %}?{{ querystring }}" class="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold py-2 px-4 rounded">Exportar CSV</a>
 </div>
 
-<form method="get" class="bg-slate-900 border border-slate-800 rounded-lg p-4 grid grid-cols-1 sm:grid-cols-4 gap-3 items-end mb-4 text-sm">
+<form method="get" class="bg-slate-900 border border-slate-800 rounded-lg p-4 grid grid-cols-1 sm:grid-cols-3 xl:grid-cols-6 gap-3 items-end mb-4 text-sm">
     {% with cls="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1.5" %}
-    <label class="block"><span class="text-xs text-slate-400">Rack</span>
+    <label class="block"><span class="text-xs text-slate-400">Escola</span>
+        <select name="local" class="{{ cls }}">
+            <option value="">Todas</option>
+            {% for local in locais %}<option value="{{ local.pk }}" {% if filtros.local == local.pk|stringformat:'s' %}selected{% endif %}>{{ local.nome }}</option>{% endfor %}
+        </select>
+    </label>
+    <label class="block"><span class="text-xs text-slate-400">Setor</span>
+        <select name="setor" class="{{ cls }}">
+            <option value="">Todos</option>
+            {% for valor, nome in setores %}<option value="{{ valor }}" {% if filtros.setor == valor %}selected{% endif %}>{{ nome }}</option>{% endfor %}
+        </select>
+    </label>
+    <label class="block"><span class="text-xs text-slate-400">Ponto</span>
         <select name="rack" class="{{ cls }}">
             <option value="">Todos</option>
-            {% for r in racks %}<option value="{{ r.codigo }}" {% if filtros.rack == r.codigo %}selected{% endif %}>{{ r.codigo }}</option>{% endfor %}
+            {% for r in racks %}<option value="{{ r.codigo }}" {% if filtros.rack == r.codigo %}selected{% endif %}>{{ r.local.nome }} · {{ r.descricao }}</option>{% endfor %}
         </select>
     </label>
     <label class="block"><span class="text-xs text-slate-400">Início (padrão: últimas 24h)</span>
@@ -34,13 +46,16 @@
 <div class="bg-slate-900 border border-slate-800 rounded-lg overflow-x-auto">
     <table class="w-full text-sm">
         <thead class="text-left text-slate-400 border-b border-slate-800">
-            <tr><th class="p-3">Data/Hora</th><th class="p-3">Rack</th><th class="p-3">Temp</th><th class="p-3">Umid</th><th class="p-3">Energia</th><th class="p-3">Porta</th><th class="p-3">Fumaça</th></tr>
+            <tr><th class="p-3">Data/Hora</th><th class="p-3">Ponto</th><th class="p-3">Temp</th><th class="p-3">Umid</th><th class="p-3">Energia</th><th class="p-3">Porta</th><th class="p-3">Fumaça</th></tr>
         </thead>
         <tbody class="divide-y divide-slate-800">
             {% for l in pagina %}
             <tr>
                 <td class="p-3 whitespace-nowrap">{{ l.timestamp|date:"d/m/Y H:i" }}</td>
-                <td class="p-3 whitespace-nowrap"><a href="{% url 'rack_detalhe' l.rack.codigo %}" class="text-white hover:underline">{{ l.rack.codigo }}</a></td>
+                <td class="p-3">
+                    <a href="{% url 'rack_detalhe' l.rack.codigo %}" class="text-white hover:underline">{{ l.rack.descricao|default:l.rack.codigo }}</a>
+                    <p class="text-xs text-slate-500 whitespace-nowrap">{{ l.rack.local.nome }} · {{ l.rack.get_setor_display }}</p>
+                </td>
                 <td class="p-3 {% if l.temperatura > l.rack.temp_max or l.temperatura < l.rack.temp_min %}text-red-400 font-semibold{% endif %}">{{ l.temperatura|floatformat:1 }} °C</td>
                 <td class="p-3 {% if l.umidade > l.rack.umid_max or l.umidade < l.rack.umid_min %}text-red-400 font-semibold{% endif %}">{{ l.umidade|floatformat:1 }} %</td>
                 <td class="p-3 {% if l.energia_kw > l.rack.energia_max %}text-red-400 font-semibold{% endif %}">{{ l.energia_kw|floatformat:2 }} kW</td>

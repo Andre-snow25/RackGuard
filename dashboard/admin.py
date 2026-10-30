@@ -5,13 +5,13 @@ from .models import Alarme, Leitura, Local, Rack
 
 @admin.register(Local)
 class LocalAdmin(admin.ModelAdmin):
-    list_display = ['nome', 'cidade', 'usuario']
+    list_display = ['nome', 'usuario']
 
 
 @admin.register(Rack)
 class RackAdmin(admin.ModelAdmin):
-    list_display = ['codigo', 'local', 'temp_min', 'temp_max', 'umid_min', 'umid_max', 'energia_max']
-    list_filter = ['local']
+    list_display = ['codigo', 'local', 'setor', 'temp_min', 'temp_max', 'umid_min', 'umid_max', 'energia_max']
+    list_filter = ['local', 'setor']
 
 
 @admin.register(Leitura)
